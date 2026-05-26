@@ -100,3 +100,22 @@ def _prediction_summary(results: dict) -> str:
         f'- {name}: {CLASS_INFO[r["class"]]["name"]} ({r["confidence"]:.1%} confidence)'
         for name, r in results.items()
     )
+
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+
+with st.sidebar:
+    st.title('⚙️ Settings')
+
+    api_key = st.text_input(
+        'OpenAI API Key',
+        value=os.getenv('OPENAI_API_KEY', ''),
+        type='password',
+        help='Loaded from .env if present.',
+    )
+
+    st.markdown('---')
+    st.subheader('Models')
+    model_enabled = {name: st.checkbox(name, value=True) for name in MODEL_PATHS}
+
+    enabled_models = {n: MODEL_PATHS[n] for n, on in model_enabled.items() if on}
