@@ -20,3 +20,15 @@ def predict(model: tf.keras.Model, image_path: str, target_size: tuple) -> dict:
         'probabilities': {c: float(p) for c, p in zip(CLASSES, probs)},
         'image_array':  img,
     }
+
+
+def compute_saliency(model: tf.keras.Model, image: np.ndarray) -> np.ndarray:
+    tensor = tf.Variable(image[np.newaxis, ...], dtype=tf.float32)
+    with tf.GradientTape() as tape:
+        preds     = model(tensor)
+        top_class = tf.argmax(preds[0])
+        loss      = preds[:, top_class]
+    grads    = tape.gradient(loss, tensor)
+    saliency = tf.reduce_max(tf.abs(grads), axis=-1)[0].numpy()
+    saliency = (saliency - saliency.min()) / (saliency.max() - saliency.min() + 1e-8)
+    return saliency
