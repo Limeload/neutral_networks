@@ -110,3 +110,15 @@ def _conv_bn_relu(x, filters: int, kernel_size: int = 3, strides: int = 1):
     x = layers.Conv2D(filters, kernel_size, strides=strides, padding='same', use_bias=False)(x)
     x = layers.BatchNormalization()(x)
     return layers.Activation('relu')(x)
+
+
+def _se_residual_block(x, filters: int):
+    shortcut = x
+    x = _conv_bn_relu(x, filters)
+    x = _conv_bn_relu(x, filters)
+    x = _se_block(x)
+    if shortcut.shape[-1] != filters:
+        shortcut = layers.Conv2D(filters, 1, padding='same', use_bias=False)(shortcut)
+        shortcut = layers.BatchNormalization()(shortcut)
+    x = layers.Add()([x, shortcut])
+    return layers.Activation('relu')(x)
