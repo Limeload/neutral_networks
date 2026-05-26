@@ -54,3 +54,26 @@ def _build_xception(image_size: tuple) -> tuple:
     x = layers.Dropout(0.3)(x)
     outputs = layers.Dense(4, activation='softmax')(x)
     return keras.Model(inputs, outputs), base
+
+
+def train_xception(quick: bool = False) -> keras.Model:
+    print('\n' + '=' * 60)
+    print('Training Xception — transfer learning (target ≥99%)')
+    print('=' * 60)
+    image_size = (299, 299)
+    save_path  = os.path.join(MODELS_DIR, 'xception_brain_tumor.keras')
+
+    train_gen, val_gen, test_gen = make_generators(image_size)
+    model, base = _build_xception(image_size)
+
+    cbs = [
+        keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True, verbose=1),
+        keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=3, min_lr=1e-6, verbose=1),
+    ]
+
+    epochs_frozen = 3 if quick else 10
+    print(f'\nPhase 1 — frozen base ({epochs_frozen} epochs)…')
+    model.compile(optimizer=keras.optimizers.Adam(1e-3),
+                  loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(train_gen, validation_data=val_gen, epochs=epochs_frozen, callbacks=cbs,
+              workers=4, use_multiprocessing=False)
