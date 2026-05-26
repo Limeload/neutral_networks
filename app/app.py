@@ -124,3 +124,34 @@ with st.sidebar:
     st.subheader('LLM (Challenge 3)')
     selected_llm_name = st.selectbox('Multimodal model', list(OPENAI_MODELS.keys()))
     selected_llm_id   = OPENAI_MODELS[selected_llm_name]
+
+
+# ── Main UI ───────────────────────────────────────────────────────────────────
+
+st.title('🧠 Brain Tumor MRI Classifier')
+st.caption('Upload an MRI scan to classify it with multiple CNN models and get AI-powered insights.')
+
+uploaded = st.file_uploader('Upload MRI image', type=['jpg', 'jpeg', 'png'])
+
+results: dict = {}
+img_bytes: bytes | None = None
+
+if uploaded:
+    img_bytes = uploaded.read()
+    tmp_path  = f'/tmp/{uploaded.name}'
+    with open(tmp_path, 'wb') as f:
+        f.write(img_bytes)
+
+    if not enabled_models:
+        st.warning('Enable at least one model in the sidebar.')
+    else:
+        with st.spinner('Running predictions…'):
+            for name, (path, size) in enabled_models.items():
+                model = load_model(path)
+                if model is None:
+                    st.error(f'{name} model not found at `{path}`.')
+                    continue
+                results[name] = predict(model, tmp_path, size)
+                results[name]['model_name'] = name
+                results[name]['model_size'] = size
+                results[name]['model']      = model
