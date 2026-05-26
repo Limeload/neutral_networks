@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+*.keras
+*.h5
+data/brain_tumor_dataset/
+.ipynb_checkpoints/
+.venv
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
