@@ -155,3 +155,36 @@ if uploaded:
                 results[name]['model_name'] = name
                 results[name]['model_size'] = size
                 results[name]['model']      = model
+
+if results:
+    st.markdown('---')
+    st.subheader('Predictions')
+    cols = st.columns(len(results))
+    for col, (name, r) in zip(cols, results.items()):
+        info  = CLASS_INFO[r['class']]
+        color = info['color']
+        with col:
+            st.markdown(
+                f"<div style='border-left:4px solid {color};padding:8px'>"
+                f"<b>{name}</b><br>"
+                f"<span style='font-size:1.3em;color:{color}'>{info['name']}</span><br>"
+                f"<small>Confidence: {r['confidence']:.1%}</small></div>",
+                unsafe_allow_html=True,
+            )
+            with st.expander('Class probabilities'):
+                for cls, prob in r['probabilities'].items():
+                    c = CLASS_INFO[cls]['color']
+                    st.markdown(
+                        f"<div style='display:flex;align-items:center;gap:8px'>"
+                        f"<span style='width:120px'>{CLASS_INFO[cls]['name']}</span>"
+                        f"<div style='flex:1;background:#eee;border-radius:4px'>"
+                        f"<div style='width:{prob*100:.1f}%;background:{c};height:14px;border-radius:4px'></div></div>"
+                        f"<span>{prob:.1%}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+            if r['class'] != 'no_tumor':
+                with st.expander('Tumor info'):
+                    st.write(f"**Description:** {info['description']}")
+                    st.write(f"**Subtypes:** {info['subtypes']}")
+                    st.write(f"**Prevalence:** {info['prevalence']}")
+                    st.write(f"**Severity:** {info['severity']}")
