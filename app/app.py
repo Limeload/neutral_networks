@@ -67,3 +67,36 @@ CLASS_INFO = {
         'color': '#4B8BFF',
     },
 }
+
+
+@st.cache_resource
+def load_model(path: str):
+    if not os.path.exists(path):
+        return None
+    try:
+        return tf.keras.models.load_model(path)
+    except Exception:
+        return None
+
+
+def _b64(img_bytes: bytes) -> str:
+    return base64.b64encode(img_bytes).decode()
+
+
+def _image_message(img_bytes: bytes, text: str) -> dict:
+    return {
+        'role': 'user',
+        'content': [
+            {'type': 'text', 'text': text},
+            {'type': 'image_url', 'image_url': {
+                'url': f'data:image/jpeg;base64,{_b64(img_bytes)}', 'detail': 'high',
+            }},
+        ],
+    }
+
+
+def _prediction_summary(results: dict) -> str:
+    return '\n'.join(
+        f'- {name}: {CLASS_INFO[r["class"]]["name"]} ({r["confidence"]:.1%} confidence)'
+        for name, r in results.items()
+    )
