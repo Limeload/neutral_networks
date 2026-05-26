@@ -248,6 +248,34 @@ if results and api_key:
         with st.chat_message(msg['role']):
             st.markdown(msg['content'])
 
+    user_input = st.chat_input('Ask about this MRI…')
+    if user_input and img_bytes:
+        st.session_state.chat_history.append({'role': 'user', 'content': user_input})
+        with st.chat_message('user'):
+            st.markdown(user_input)
+
+        system_ctx = (
+            'You are a neuroradiology AI assistant. '
+            'Answer questions about this brain MRI image clearly and concisely. '
+            f'Model predictions: {_prediction_summary(results)}'
+        )
+        api_messages = [{'role': 'system', 'content': system_ctx}]
+        for turn in st.session_state.chat_history[:-1]:
+            api_messages.append({'role': turn['role'], 'content': turn['content']})
+        api_messages.append(_image_message(img_bytes, user_input))
+
+        client = OpenAI(api_key=api_key)
+        with st.chat_message('assistant'):
+            with st.spinner('Thinking…'):
+                resp = client.chat.completions.create(
+                    model=selected_llm_id,
+                    messages=api_messages,
+                    max_tokens=800,
+                )
+            answer = resp.choices[0].message.content
+            st.markdown(answer)
+        st.session_state.chat_history.append({'role': 'assistant', 'content': answer})
+
 if results and api_key:
     st.markdown('---')
     st.subheader('Challenge 5 — Clinical Report')
