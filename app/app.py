@@ -188,3 +188,25 @@ if results:
                     st.write(f"**Subtypes:** {info['subtypes']}")
                     st.write(f"**Prevalence:** {info['prevalence']}")
                     st.write(f"**Severity:** {info['severity']}")
+
+if len(results) > 1:
+    st.markdown('---')
+    st.subheader('Challenge 6 — Model Comparison Dashboard')
+    tab_probs, tab_sal = st.tabs(['Probability Comparison', 'Saliency Maps'])
+
+    with tab_probs:
+        fig, axes = plt.subplots(1, len(results), figsize=(6 * len(results), 4), squeeze=False)
+        for ax, (name, r) in zip(axes[0], results.items()):
+            labels = [CLASS_INFO[c]['name'] for c in CLASSES]
+            probs  = [r['probabilities'][c] for c in CLASSES]
+            colors = [CLASS_INFO[c]['color'] for c in CLASSES]
+            bars   = ax.barh(labels, probs, color=colors)
+            ax.set_xlim(0, 1)
+            ax.set_title(name, fontweight='bold')
+            ax.set_xlabel('Probability')
+            for bar, p in zip(bars, probs):
+                ax.text(min(p + 0.01, 0.95), bar.get_y() + bar.get_height() / 2,
+                        f'{p:.1%}', va='center', fontsize=9)
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
