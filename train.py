@@ -36,3 +36,21 @@ def make_generators(image_size: tuple, augment: bool = True):
     test_gen  = test_gen_cfg.flow_from_directory(TEST_DIR, shuffle=False, **kw)
     print('Class indices:', train_gen.class_indices)
     return train_gen, val_gen, test_gen
+
+
+# ── Xception (Challenge 2 — transfer learning, target ≥99%) ──────────────────
+
+def _build_xception(image_size: tuple) -> tuple:
+    base = Xception(weights='imagenet', include_top=False, input_shape=(*image_size, 3))
+    base.trainable = False
+
+    inputs = keras.Input(shape=(*image_size, 3))
+    x = base(inputs, training=False)
+    x = layers.GlobalAveragePooling2D()(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.Dropout(0.4)(x)
+    x = layers.Dense(256, activation='relu')(x)
+    x = layers.Dropout(0.3)(x)
+    outputs = layers.Dense(4, activation='softmax')(x)
+    return keras.Model(inputs, outputs), base
