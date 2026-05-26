@@ -165,6 +165,20 @@ def train_custom_cnn(quick: bool = False) -> keras.Model:
     return model
 
 
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Train brain-tumor classification models')
+    parser.add_argument('--model',  choices=['xception', 'cnn', 'both'], default='both')
+    parser.add_argument('--quick', action='store_true', help='Few epochs — for smoke-testing')
+    args = parser.parse_args()
+
+    if args.model in ('xception', 'both'):
+        train_xception(quick=args.quick)
+    if args.model in ('cnn', 'both'):
+        train_custom_cnn(quick=args.quick)
+
+    print('\nAll done — models saved to models/')
+
+
 def _se_residual_block(x, filters: int):
     shortcut = x
     x = _conv_bn_relu(x, filters)
