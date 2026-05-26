@@ -177,15 +177,3 @@ if __name__ == '__main__':
         train_custom_cnn(quick=args.quick)
 
     print('\nAll done — models saved to models/')
-
-
-def _se_residual_block(x, filters: int):
-    shortcut = x
-    x = _conv_bn_relu(x, filters)
-    x = _conv_bn_relu(x, filters)
-    x = _se_block(x)
-    if shortcut.shape[-1] != filters:
-        shortcut = layers.Conv2D(filters, 1, padding='same', use_bias=False)(shortcut)
-        shortcut = layers.BatchNormalization()(shortcut)
-    x = layers.Add()([x, shortcut])
-    return layers.Activation('relu')(x)
