@@ -93,3 +93,20 @@ def train_xception(quick: bool = False) -> keras.Model:
     model.save(save_path)
     print(f'Saved → {save_path}')
     return model
+
+
+# ── Custom SE-ResNet CNN (Challenge 1 — target ≥98%) ─────────────────────────
+
+def _se_block(x, ratio: int = 16):
+    filters = x.shape[-1]
+    se = layers.GlobalAveragePooling2D()(x)
+    se = layers.Dense(filters // ratio, activation='relu')(se)
+    se = layers.Dense(filters, activation='sigmoid')(se)
+    se = layers.Reshape((1, 1, filters))(se)
+    return layers.Multiply()([x, se])
+
+
+def _conv_bn_relu(x, filters: int, kernel_size: int = 3, strides: int = 1):
+    x = layers.Conv2D(filters, kernel_size, strides=strides, padding='same', use_bias=False)(x)
+    x = layers.BatchNormalization()(x)
+    return layers.Activation('relu')(x)
