@@ -157,6 +157,13 @@ def train_custom_cnn(quick: bool = False) -> keras.Model:
     model.fit(train_gen, validation_data=val_gen, epochs=epochs, callbacks=cbs,
               workers=4, use_multiprocessing=False)
 
+    loss, acc = model.evaluate(test_gen)
+    print(f'\nCustom CNN test accuracy: {acc:.4f}')
+    if not os.path.exists(save_path):
+        model.save(save_path)
+    print(f'Saved → {save_path}')
+    return model
+
 
 def _se_residual_block(x, filters: int):
     shortcut = x
