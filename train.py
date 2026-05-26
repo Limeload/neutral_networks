@@ -128,6 +128,28 @@ def _build_se_resnet(image_size: tuple) -> keras.Model:
     return keras.Model(inputs, outputs)
 
 
+def train_custom_cnn(quick: bool = False) -> keras.Model:
+    print('\n' + '=' * 60)
+    print('Training SE-ResNet CNN (target ≥98%)')
+    print('=' * 60)
+    image_size = (224, 224)
+    save_path  = os.path.join(MODELS_DIR, 'custom_cnn_brain_tumor.keras')
+
+    train_gen, val_gen, test_gen = make_generators(image_size)
+    model  = _build_se_resnet(image_size)
+    epochs = 5 if quick else 80
+
+    total_steps = len(train_gen) * epochs
+    lr_schedule = keras.optimizers.schedules.CosineDecay(
+        initial_learning_rate=1e-3, decay_steps=total_steps, alpha=1e-6,
+    )
+    model.compile(
+        optimizer=keras.optimizers.Adam(lr_schedule),
+        loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+        metrics=['accuracy'],
+    )
+
+
 def _se_residual_block(x, filters: int):
     shortcut = x
     x = _conv_bn_relu(x, filters)
