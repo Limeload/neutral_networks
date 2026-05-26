@@ -119,3 +119,8 @@ with st.sidebar:
     model_enabled = {name: st.checkbox(name, value=True) for name in MODEL_PATHS}
 
     enabled_models = {n: MODEL_PATHS[n] for n, on in model_enabled.items() if on}
+
+    st.markdown('---')
+    st.subheader('LLM (Challenge 3)')
+    selected_llm_name = st.selectbox('Multimodal model', list(OPENAI_MODELS.keys()))
+    selected_llm_id   = OPENAI_MODELS[selected_llm_name]
