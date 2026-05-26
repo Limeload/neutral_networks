@@ -149,6 +149,14 @@ def train_custom_cnn(quick: bool = False) -> keras.Model:
         metrics=['accuracy'],
     )
 
+    cbs = [
+        keras.callbacks.EarlyStopping(patience=12, restore_best_weights=True, verbose=1),
+        keras.callbacks.ModelCheckpoint(save_path, save_best_only=True, verbose=1),
+    ]
+    print(f'\nTraining for up to {epochs} epochs with cosine decay…')
+    model.fit(train_gen, validation_data=val_gen, epochs=epochs, callbacks=cbs,
+              workers=4, use_multiprocessing=False)
+
 
 def _se_residual_block(x, filters: int):
     shortcut = x
