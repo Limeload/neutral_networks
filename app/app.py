@@ -234,3 +234,32 @@ if len(results) > 1:
     else:
         labels = [f'{n}: {CLASS_INFO[r["class"]]["name"]}' for n, r in results.items()]
         st.warning('⚠️ Models disagree — ' + ' | '.join(labels))
+
+if results and api_key:
+    st.markdown('---')
+    st.subheader('Challenge 5 — Clinical Report')
+    if st.button('Generate Clinical Report'):
+        client = OpenAI(api_key=api_key)
+        prompt = (
+            'You are a neuroradiology AI assistant. Based on the MRI scan and model predictions below, '
+            'generate a comprehensive clinical report with these 8 sections:\n'
+            '1. Executive Summary\n2. Imaging Findings\n3. Classification Results\n'
+            '4. Differential Diagnosis\n5. Tumor Characteristics\n6. Historical Context & Similar Cases\n'
+            '7. Recommended Next Steps\n8. Disclaimer\n\n'
+            f'Model predictions:\n{_prediction_summary(results)}\n\n'
+            'Format each section with a markdown heading (##).'
+        )
+        with st.spinner('Generating report…'):
+            resp = client.chat.completions.create(
+                model=selected_llm_id,
+                messages=[_image_message(img_bytes, prompt)],
+                max_tokens=2000,
+            )
+        report = resp.choices[0].message.content
+        st.markdown(report)
+        st.download_button(
+            'Download report (.md)',
+            data=report,
+            file_name='brain_tumor_report.md',
+            mime='text/markdown',
+        )
