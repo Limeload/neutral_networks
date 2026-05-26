@@ -210,3 +210,27 @@ if len(results) > 1:
         plt.tight_layout()
         st.pyplot(fig)
         plt.close(fig)
+
+    with tab_sal:
+        n = len(results)
+        fig, axes = plt.subplots(2, n, figsize=(5 * n, 9), squeeze=False)
+        for col, (name, r) in enumerate(results.items()):
+            img_arr = r['image_array']
+            sal     = compute_saliency(r['model'], img_arr)
+            axes[0][col].imshow(img_arr)
+            axes[0][col].set_title(f'{name} — Original', fontweight='bold')
+            axes[0][col].axis('off')
+            axes[1][col].imshow(img_arr)
+            axes[1][col].imshow(sal, cmap='hot', alpha=0.5)
+            axes[1][col].set_title(f'{name} — Saliency Overlay', fontweight='bold')
+            axes[1][col].axis('off')
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+
+    classes = [r['class'] for r in results.values()]
+    if len(set(classes)) == 1:
+        st.success(f'✅ All models agree: **{CLASS_INFO[classes[0]]["name"]}**')
+    else:
+        labels = [f'{n}: {CLASS_INFO[r["class"]]["name"]}' for n, r in results.items()]
+        st.warning('⚠️ Models disagree — ' + ' | '.join(labels))
