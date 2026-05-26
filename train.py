@@ -112,6 +112,22 @@ def _conv_bn_relu(x, filters: int, kernel_size: int = 3, strides: int = 1):
     return layers.Activation('relu')(x)
 
 
+def _build_se_resnet(image_size: tuple) -> keras.Model:
+    inputs = keras.Input(shape=(*image_size, 3))
+    x = _conv_bn_relu(inputs, 64, 7, strides=2)
+    x = layers.MaxPooling2D(3, strides=2, padding='same')(x)
+    for filters, repeats in [(64, 2), (128, 2), (256, 3), (512, 3)]:
+        for _ in range(repeats):
+            x = _se_residual_block(x, filters)
+        x = layers.MaxPooling2D(2)(x)
+        x = layers.SpatialDropout2D(0.1)(x)
+    x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Dense(512, activation='relu')(x)
+    x = layers.Dropout(0.4)(x)
+    outputs = layers.Dense(4, activation='softmax')(x)
+    return keras.Model(inputs, outputs)
+
+
 def _se_residual_block(x, filters: int):
     shortcut = x
     x = _conv_bn_relu(x, filters)
