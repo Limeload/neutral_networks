@@ -235,6 +235,19 @@ if len(results) > 1:
         labels = [f'{n}: {CLASS_INFO[r["class"]]["name"]}' for n, r in results.items()]
         st.warning('⚠️ Models disagree — ' + ' | '.join(labels))
 
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
+
+if results and api_key:
+    st.markdown('---')
+    st.subheader('Challenge 4 — Chat with Your MRI')
+    if st.button('Clear chat'):
+        st.session_state.chat_history = []
+
+    for msg in st.session_state.chat_history:
+        with st.chat_message(msg['role']):
+            st.markdown(msg['content'])
+
 if results and api_key:
     st.markdown('---')
     st.subheader('Challenge 5 — Clinical Report')
