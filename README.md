@@ -1,6 +1,6 @@
 # Brain Tumor Classification
 
-Deep learning app that classifies brain MRI scans into four categories — **glioma, meningioma, no tumor, pituitary** — using two CNN models with AI-generated explanations via Gemini.
+Deep learning app that classifies brain MRI scans into four categories — **glioma, meningioma, no tumor, pituitary** — using two CNN models with AI-generated explanations via OpenAI.
 
 ## Stack
 
@@ -57,4 +57,4 @@ Open [http://localhost:3000](http://localhost:3000).
 - Saliency map overlays showing what each model focuses on
 - AI explanation with selectable LLM (Gemini 1.5 Flash or Pro)
 - Chat with the MRI scan for follow-up questions
-# neutral_networks
+
