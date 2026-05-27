@@ -112,6 +112,18 @@ def _conv_bn_relu(x, filters: int, kernel_size: int = 3, strides: int = 1):
     return layers.Activation('relu')(x)
 
 
+def _se_residual_block(x, filters: int):
+    shortcut = x
+    if x.shape[-1] != filters:
+        shortcut = layers.Conv2D(filters, 1, padding='same', use_bias=False)(shortcut)
+        shortcut = layers.BatchNormalization()(shortcut)
+    x = _conv_bn_relu(x, filters)
+    x = _conv_bn_relu(x, filters)
+    x = _se_block(x)
+    x = layers.Add()([x, shortcut])
+    return layers.Activation('relu')(x)
+
+
 def _build_se_resnet(image_size: tuple) -> keras.Model:
     inputs = keras.Input(shape=(*image_size, 3))
     x = _conv_bn_relu(inputs, 64, 7, strides=2)
