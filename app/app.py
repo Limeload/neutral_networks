@@ -84,6 +84,7 @@ def _ensure_model_file(path: str) -> str | None:
             repo_id=HF_MODEL_REPO,
             filename=os.path.basename(path),
             local_dir='/tmp/hf_models',
+            token=False,
         )
     except Exception as e:
         st.error(f'Could not download {os.path.basename(path)} from HF Hub: {e}')
