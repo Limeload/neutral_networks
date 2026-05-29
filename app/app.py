@@ -138,17 +138,11 @@ def _prob_bar(label: str, prob: float, color: str) -> None:
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
+api_key = os.getenv('OPENAI_API_KEY', '')
+
 with st.sidebar:
     st.header('Configuration')
 
-    api_key = st.text_input(
-        'OpenAI API Key',
-        value=os.getenv('OPENAI_API_KEY', ''),
-        type='password',
-        help='Loaded automatically from .env if present.',
-    )
-
-    st.divider()
     st.subheader('Classification Models')
     model_enabled  = {name: st.checkbox(name, value=True) for name in MODEL_PATHS}
     enabled_models = {n: MODEL_PATHS[n] for n, on in model_enabled.items() if on}
