@@ -7,6 +7,7 @@ import numpy as np
 import streamlit as st
 import tensorflow as tf
 from dotenv import load_dotenv
+from huggingface_hub import hf_hub_download
 from openai import OpenAI
 from PIL import Image
 
@@ -14,6 +15,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.predict import CLASSES, compute_saliency, predict
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+# Set via HF Space secret or .env — e.g. "yourusername/brain-tumor-models"
+HF_MODEL_REPO = os.getenv('HF_MODEL_REPO', '')
 
 st.set_page_config(page_title='Brain Tumor MRI Classification', layout='wide')
 
@@ -69,12 +73,30 @@ CLASS_INFO = {
 }
 
 
-@st.cache_resource
-def load_model(path: str):
-    if not os.path.exists(path):
+def _ensure_model_file(path: str) -> str | None:
+    """Return path if the file exists locally; otherwise download from HF Hub."""
+    if os.path.exists(path):
+        return path
+    if not HF_MODEL_REPO:
         return None
     try:
-        return tf.keras.models.load_model(path)
+        return hf_hub_download(
+            repo_id=HF_MODEL_REPO,
+            filename=os.path.basename(path),
+            local_dir='/tmp/hf_models',
+        )
+    except Exception as e:
+        st.error(f'Could not download {os.path.basename(path)} from HF Hub: {e}')
+        return None
+
+
+@st.cache_resource
+def load_model(path: str) -> tf.keras.Model | None:
+    resolved = _ensure_model_file(path)
+    if not resolved:
+        return None
+    try:
+        return tf.keras.models.load_model(resolved)
     except Exception:
         return None
 
