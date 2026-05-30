@@ -98,7 +98,8 @@ def load_model(path: str) -> tf.keras.Model | None:
         return None
     try:
         return tf.keras.models.load_model(resolved)
-    except Exception:
+    except Exception as e:
+        st.error(f'Failed to load model {os.path.basename(path)}: {e}')
         return None
 
 
