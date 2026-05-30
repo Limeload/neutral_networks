@@ -26,10 +26,6 @@ MODEL_PATHS = {
         os.path.join(os.path.dirname(__file__), '..', 'models', 'custom_cnn_brain_tumor.keras'),
         (224, 224),
     ),
-    'Xception': (
-        os.path.join(os.path.dirname(__file__), '..', 'models', 'xception_brain_tumor_final.keras'),
-        (299, 299),
-    ),
 }
 
 OPENAI_MODELS = {
