@@ -73,6 +73,22 @@ CLASS_INFO = {
 }
 
 
+def _build_xception() -> tf.keras.Model:
+    from tensorflow.keras import layers as L
+    from tensorflow.keras.applications import Xception
+    base = Xception(weights='imagenet', include_top=False, input_shape=(299, 299, 3))
+    inputs = tf.keras.Input(shape=(299, 299, 3))
+    x = base(inputs, training=False)
+    x = L.GlobalAveragePooling2D()(x)
+    x = L.BatchNormalization()(x)
+    x = L.Dense(512, activation='relu')(x)
+    x = L.Dropout(0.4)(x)
+    x = L.Dense(256, activation='relu')(x)
+    x = L.Dropout(0.3)(x)
+    outputs = L.Dense(4, activation='softmax')(x)
+    return tf.keras.Model(inputs, outputs)
+
+
 def _ensure_model_file(path: str) -> str | None:
     """Return path if the file exists locally; otherwise download from HF Hub."""
     if os.path.exists(path):
@@ -98,6 +114,13 @@ def load_model(path: str) -> tf.keras.Model | None:
         return None
     try:
         return tf.keras.models.load_model(resolved)
+    except Exception:
+        pass
+    # Weights-only file — rebuild Xception architecture and load weights
+    try:
+        model = _build_xception()
+        model.load_weights(resolved)
+        return model
     except Exception as e:
         st.error(f'Failed to load model {os.path.basename(path)}: {e}')
         return None
