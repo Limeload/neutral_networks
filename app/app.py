@@ -97,6 +97,15 @@ def load_model(path: str) -> tf.keras.Model | None:
     if not resolved:
         return None
     try:
+        # HDF5 files with .keras extension must be renamed to .h5 for Keras 3
+        with open(resolved, 'rb') as f:
+            is_h5 = f.read(4) == b'\x89HDF'
+        if is_h5 and resolved.endswith('.keras'):
+            import shutil
+            h5_path = resolved[:-6] + '.h5'
+            if not os.path.exists(h5_path):
+                shutil.copy2(resolved, h5_path)
+            resolved = h5_path
         return tf.keras.models.load_model(resolved)
     except Exception as e:
         st.error(f'Failed to load model {os.path.basename(path)}: {e}')
