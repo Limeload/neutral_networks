@@ -336,20 +336,23 @@ if results:
                     'Write in clinical but accessible language.'
                 )
                 with st.spinner('Generating report…'):
-                    client = OpenAI(api_key=api_key)
-                    resp   = client.chat.completions.create(
-                        model=selected_llm_id,
-                        messages=[_image_message(img_bytes, prompt)],
-                        max_tokens=2000,
-                    )
-                report = resp.choices[0].message.content
-                st.markdown(report)
-                st.download_button(
-                    'Download Report (Markdown)',
-                    data=report,
-                    file_name='mri_classification_report.md',
-                    mime='text/markdown',
-                )
+                    try:
+                        client = OpenAI(api_key=api_key)
+                        resp   = client.chat.completions.create(
+                            model=selected_llm_id,
+                            messages=[_image_message(img_bytes, prompt)],
+                            max_tokens=2000,
+                        )
+                        report = resp.choices[0].message.content
+                        st.markdown(report)
+                        st.download_button(
+                            'Download Report (Markdown)',
+                            data=report,
+                            file_name='mri_classification_report.md',
+                            mime='text/markdown',
+                        )
+                    except Exception as e:
+                        st.error(f'OpenAI error: {e}')
 
     # ── Tab 4: multi-turn image chat ───────────────────────────────────────────
 
@@ -388,14 +391,17 @@ if results:
                     api_messages.append({'role': turn['role'], 'content': turn['content']})
                 api_messages.append(_image_message(img_bytes, user_input))
 
-                client = OpenAI(api_key=api_key)
                 with st.chat_message('assistant'):
                     with st.spinner(''):
-                        resp = client.chat.completions.create(
-                            model=selected_llm_id,
-                            messages=api_messages,
-                            max_tokens=800,
-                        )
-                    answer = resp.choices[0].message.content
+                        try:
+                            client = OpenAI(api_key=api_key)
+                            resp = client.chat.completions.create(
+                                model=selected_llm_id,
+                                messages=api_messages,
+                                max_tokens=800,
+                            )
+                            answer = resp.choices[0].message.content
+                        except Exception as e:
+                            answer = f'⚠️ OpenAI error: {e}'
                     st.markdown(answer)
                 st.session_state.chat_history.append({'role': 'assistant', 'content': answer})
