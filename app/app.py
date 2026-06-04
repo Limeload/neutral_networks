@@ -255,8 +255,16 @@ if results:
                     info = CLASS_INFO[r['class']]
                     with st.expander('Tumor profile'):
                         m1, m2 = st.columns(2)
-                        m1.metric('Severity', info['severity'])
-                        m2.metric('Prevalence', info['prevalence'])
+                        m1.markdown(
+                            f"<div style='font-size:0.75em;color:#6B7280;margin-bottom:2px'>Severity</div>"
+                            f"<div style='font-size:1.1em;font-weight:700;color:#111827;word-break:break-word'>{info['severity']}</div>",
+                            unsafe_allow_html=True,
+                        )
+                        m2.markdown(
+                            f"<div style='font-size:0.75em;color:#6B7280;margin-bottom:2px'>Prevalence</div>"
+                            f"<div style='font-size:1.1em;font-weight:700;color:#111827;word-break:break-word'>{info['prevalence']}</div>",
+                            unsafe_allow_html=True,
+                        )
                         st.caption(f"**Subtypes:** {info['subtypes']}")
                         st.caption(info['description'])
 
