@@ -27,7 +27,7 @@ MODEL_PATHS = {
         (224, 224),
     ),
     'Xception': (
-        os.path.join(os.path.dirname(__file__), '..', 'models', 'best_xception.keras'),
+        os.path.join(os.path.dirname(__file__), '..', 'models', 'xception_brain_mri_final.keras'),
         (299, 299),
     ),
 }
