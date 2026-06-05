@@ -77,17 +77,33 @@ def _ensure_model_file(path: str) -> str | None:
     """Return path if the file exists locally; otherwise download from HF Hub."""
     if os.path.exists(path):
         return path
+    filename = os.path.basename(path)
     if not HF_MODEL_REPO:
+        print(
+            f'[brain-tumor-app] Model file not found: {path}. '
+            'Set HF_MODEL_REPO in .env or place weights in models/.',
+            file=sys.stderr,
+        )
         return None
     try:
         return hf_hub_download(
             repo_id=HF_MODEL_REPO,
-            filename=os.path.basename(path),
+            filename=filename,
             local_dir='/tmp/hf_models',
             token=False,
         )
     except Exception as e:
-        st.error(f'Could not download {os.path.basename(path)} from HF Hub: {e}')
+        print(
+            f'[brain-tumor-app] HF Hub download failed for {filename} '
+            f'(repo={HF_MODEL_REPO}): {e}',
+            file=sys.stderr,
+        )
+        st.error(
+            f'Could not download **{filename}** from Hugging Face Hub. '
+            f'Verify that `HF_MODEL_REPO` in `.env` is correct and the file exists '
+            f'in the repo, or place the `.keras` file manually in the `models/` directory.\n\n'
+            f'Error: `{e}`'
+        )
         return None
 
 
@@ -99,8 +115,34 @@ def load_model(path: str) -> tf.keras.Model | None:
     try:
         return tf.keras.models.load_model(resolved)
     except Exception as e:
-        st.error(f'Failed to load model {os.path.basename(path)}: {e}')
+        print(
+            f'[brain-tumor-app] Failed to load {resolved}: {e}',
+            file=sys.stderr,
+        )
+        st.error(
+            f'Failed to load **{os.path.basename(path)}**. '
+            'The file may be corrupt or incompatible with the current TensorFlow version. '
+            f'Error: `{e}`'
+        )
         return None
+
+
+@st.cache_resource
+def _model_availability() -> dict[str, str]:
+    """
+    Check each model's availability without loading weights.
+    Returns {name: 'local' | 'hf' | 'missing'} so the sidebar can warn early.
+    Cached so the filesystem check only runs once per server session.
+    """
+    status = {}
+    for name, (path, _) in MODEL_PATHS.items():
+        if os.path.exists(path):
+            status[name] = 'local'
+        elif HF_MODEL_REPO:
+            status[name] = 'hf'
+        else:
+            status[name] = 'missing'
+    return status
 
 
 def _b64(img_bytes: bytes) -> str:
@@ -153,8 +195,18 @@ with st.sidebar:
     st.header('Configuration')
 
     st.subheader('Classification Models')
+    _avail = _model_availability()
     model_enabled  = {name: st.checkbox(name, value=True) for name in MODEL_PATHS}
     enabled_models = {n: MODEL_PATHS[n] for n, on in model_enabled.items() if on}
+
+    for name, state in _avail.items():
+        if state == 'missing':
+            st.warning(
+                f'**{name}** weights not found. Set `HF_MODEL_REPO` in `.env` '
+                'or place the `.keras` file in `models/`.'
+            )
+        elif state == 'hf':
+            st.caption(f'{name}: will download from HF Hub on first use.')
 
     st.divider()
     st.subheader('Language Model')
