@@ -186,6 +186,72 @@ def _prob_bar(label: str, prob: float, color: str) -> None:
     )
 
 
+# ── Figure helpers (cached) ────────────────────────────────────────────────────
+# Each function saves the figure to a BytesIO buffer and calls plt.close(fig)
+# before returning, so matplotlib never accumulates open figures across reruns.
+# @st.cache_data keys on the function arguments — figures are only rebuilt when
+# the underlying data changes (new upload or different model selection).
+
+@st.cache_data
+def _distribution_figure(probs_per_model: dict[str, dict[str, float]]) -> bytes:
+    n = len(probs_per_model)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 4), squeeze=False)
+    for ax, (name, probs) in zip(axes[0], probs_per_model.items()):
+        labels = [CLASS_INFO[c]['name'] for c in CLASSES]
+        vals   = [probs[c] for c in CLASSES]
+        colors = [CLASS_INFO[c]['color'] for c in CLASSES]
+        bars   = ax.barh(labels, vals, color=colors, edgecolor='none', height=0.55)
+        ax.set_xlim(0, 1)
+        ax.set_title(name, fontweight='bold', pad=10)
+        ax.set_xlabel('Probability')
+        ax.spines[['top', 'right']].set_visible(False)
+        ax.tick_params(axis='y', labelsize=10)
+        for bar, p in zip(bars, vals):
+            ax.text(
+                min(p + 0.015, 0.93), bar.get_y() + bar.get_height() / 2,
+                f'{p:.1%}', va='center', fontsize=9,
+            )
+    plt.tight_layout(pad=1.5)
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
+@st.cache_data(hash_funcs={tf.keras.Model: id})
+def _cached_saliency(model: tf.keras.Model, img_array: np.ndarray) -> np.ndarray:
+    # id() is stable because models are held in @st.cache_resource for the session.
+    return compute_saliency(model, img_array)
+
+
+@st.cache_data
+def _saliency_figure(
+    model_names: tuple[str, ...],
+    img_arrays: tuple[np.ndarray, ...],
+    saliency_arrays: tuple[np.ndarray, ...],
+) -> bytes:
+    n = len(model_names)
+    fig, axes = plt.subplots(2, n, figsize=(5 * n, 8), squeeze=False)
+    fig.patch.set_facecolor('#FFFFFF')
+    for ci, (name, img_arr, sal) in enumerate(zip(model_names, img_arrays, saliency_arrays)):
+        axes[0][ci].imshow(img_arr)
+        axes[0][ci].set_title(name, fontweight='bold', pad=8)
+        axes[0][ci].axis('off')
+        axes[1][ci].imshow(img_arr)
+        axes[1][ci].imshow(sal, cmap='hot', alpha=0.45)
+        axes[1][ci].set_title(f'{name} — Activation', fontweight='bold', pad=8)
+        axes[1][ci].axis('off')
+    fig.text(0.005, 0.73, 'Original', va='center', rotation='vertical', fontsize=10, color='#555')
+    fig.text(0.005, 0.27, 'Saliency', va='center', rotation='vertical', fontsize=10, color='#555')
+    plt.tight_layout(pad=1.2)
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
+    plt.close(fig)
+    buf.seek(0)
+    return buf.read()
+
+
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
 # Seed session state from server-side secrets or env on first load only.
@@ -370,49 +436,16 @@ if results:
             sub_dist, sub_sal = st.tabs(['Probability Distribution', 'Saliency Maps'])
 
             with sub_dist:
-                n   = len(results)
-                fig, axes = plt.subplots(1, n, figsize=(6 * n, 4), squeeze=False)
-                for ax, (name, r) in zip(axes[0], results.items()):
-                    labels = [CLASS_INFO[c]['name'] for c in CLASSES]
-                    probs  = [r['probabilities'][c] for c in CLASSES]
-                    colors = [CLASS_INFO[c]['color'] for c in CLASSES]
-                    bars   = ax.barh(labels, probs, color=colors, edgecolor='none', height=0.55)
-                    ax.set_xlim(0, 1)
-                    ax.set_title(name, fontweight='bold', pad=10)
-                    ax.set_xlabel('Probability')
-                    ax.spines[['top', 'right']].set_visible(False)
-                    ax.tick_params(axis='y', labelsize=10)
-                    for bar, p in zip(bars, probs):
-                        ax.text(
-                            min(p + 0.015, 0.93),
-                            bar.get_y() + bar.get_height() / 2,
-                            f'{p:.1%}', va='center', fontsize=9,
-                        )
-                plt.tight_layout(pad=1.5)
-                st.pyplot(fig)
-                plt.close(fig)
+                probs_input = {name: r['probabilities'] for name, r in results.items()}
+                st.image(_distribution_figure(probs_input), use_container_width=True)
 
             with sub_sal:
-                n   = len(results)
-                fig, axes = plt.subplots(2, n, figsize=(5 * n, 8), squeeze=False)
-                fig.patch.set_facecolor('#FFFFFF')
-                for ci, (name, r) in enumerate(results.items()):
-                    img_arr = r['image_array']
-                    sal     = compute_saliency(r['model'], img_arr)
-                    axes[0][ci].imshow(img_arr)
-                    axes[0][ci].set_title(name, fontweight='bold', pad=8)
-                    axes[0][ci].axis('off')
-                    axes[1][ci].imshow(img_arr)
-                    axes[1][ci].imshow(sal, cmap='hot', alpha=0.45)
-                    axes[1][ci].set_title(f'{name} — Activation', fontweight='bold', pad=8)
-                    axes[1][ci].axis('off')
-                fig.text(0.005, 0.73, 'Original', va='center', rotation='vertical',
-                         fontsize=10, color='#555')
-                fig.text(0.005, 0.27, 'Saliency', va='center', rotation='vertical',
-                         fontsize=10, color='#555')
-                plt.tight_layout(pad=1.2)
-                st.pyplot(fig)
-                plt.close(fig)
+                names = tuple(results.keys())
+                imgs  = tuple(r['image_array'] for r in results.values())
+                sals  = tuple(
+                    _cached_saliency(r['model'], r['image_array']) for r in results.values()
+                )
+                st.image(_saliency_figure(names, imgs, sals), use_container_width=True)
 
     # ── Tab 3: clinical report ─────────────────────────────────────────────────
 
