@@ -171,11 +171,16 @@ def _prediction_summary(results: dict) -> str:
 
 def _prob_bar(label: str, prob: float, color: str) -> None:
     st.markdown(
-        f"<div style='display:flex;align-items:center;gap:10px;margin:5px 0'>"
-        f"<span style='width:150px;font-size:0.85em;color:#374151'>{label}</span>"
-        f"<div style='flex:1;background:#E5E7EB;border-radius:3px;height:14px'>"
+        f"<div role='group' aria-label='{label}: {prob:.1%}'"
+        f" style='display:flex;align-items:center;gap:10px;margin:5px 0'>"
+        f"<span aria-hidden='true'"
+        f" style='width:150px;font-size:0.85em;color:#374151'>{label}</span>"
+        f"<div role='progressbar' aria-valuenow='{prob * 100:.0f}' aria-valuemin='0' aria-valuemax='100'"
+        f" aria-label='{label} probability: {prob:.1%}'"
+        f" style='flex:1;background:#E5E7EB;border-radius:3px;height:14px'>"
         f"<div style='width:{prob * 100:.1f}%;background:{color};height:14px;border-radius:3px'></div></div>"
-        f"<span style='width:42px;text-align:right;font-size:0.85em;color:#374151'>{prob:.1%}</span>"
+        f"<span aria-hidden='true'"
+        f" style='width:42px;text-align:right;font-size:0.85em;color:#374151'>{prob:.1%}</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -304,11 +309,13 @@ if uploaded:
                 info  = CLASS_INFO[r['class']]
                 color = info['color']
                 st.markdown(
-                    f"<div style='border-left:4px solid {color};padding:10px 16px;"
+                    f"<div role='region' aria-label='{name}: {info['name']}, confidence {r['confidence']:.1%}'"
+                    f" style='border-left:4px solid {color};padding:10px 16px;"
                     f"background:#F9FAFB;border-radius:0 6px 6px 0;margin-bottom:12px'>"
-                    f"<div style='font-size:0.75em;font-weight:600;color:#6B7280;"
+                    f"<div aria-hidden='true' style='font-size:0.75em;font-weight:600;color:#6B7280;"
                     f"text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px'>{name}</div>"
-                    f"<div style='font-size:1.15em;font-weight:700;color:{color}'>{info['name']}</div>"
+                    f"<div role='heading' aria-level='3'"
+                    f" style='font-size:1.15em;font-weight:700;color:{color}'>{info['name']}</div>"
                     f"<div style='font-size:0.85em;color:#6B7280;margin-top:2px'>"
                     f"Confidence: <strong>{r['confidence']:.1%}</strong></div>"
                     f"</div>",
@@ -347,16 +354,10 @@ if results:
                     info = CLASS_INFO[r['class']]
                     with st.expander('Tumor profile'):
                         m1, m2 = st.columns(2)
-                        m1.markdown(
-                            f"<div style='font-size:0.75em;color:#6B7280;margin-bottom:2px'>Severity</div>"
-                            f"<div style='font-size:1.1em;font-weight:700;color:#111827;word-break:break-word'>{info['severity']}</div>",
-                            unsafe_allow_html=True,
-                        )
-                        m2.markdown(
-                            f"<div style='font-size:0.75em;color:#6B7280;margin-bottom:2px'>Prevalence</div>"
-                            f"<div style='font-size:1.1em;font-weight:700;color:#111827;word-break:break-word'>{info['prevalence']}</div>",
-                            unsafe_allow_html=True,
-                        )
+                        m1.caption('Severity')
+                        m1.markdown(f"**{info['severity']}**")
+                        m2.caption('Prevalence')
+                        m2.markdown(f"**{info['prevalence']}**")
                         st.caption(f"**Subtypes:** {info['subtypes']}")
                         st.caption(info['description'])
 
