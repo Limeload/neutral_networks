@@ -1,8 +1,5 @@
 [server]
-# Keep both protections enabled for any shared or public deployment.
-# Disabling them removes CORS and CSRF safeguards and should only ever
-# be done temporarily in a private local environment when debugging a
-# reverse-proxy configuration. See:
-# https://docs.streamlit.io/develop/api-reference/configuration/config.toml#server
-enableCORS = true
-enableXsrfProtection = true
+# HF Spaces runs behind a reverse proxy that handles CORS and CSRF.
+# Both must be disabled here or the frontend gets 403 AxiosErrors.
+enableCORS = false
+enableXsrfProtection = false
