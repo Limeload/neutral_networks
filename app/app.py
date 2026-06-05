@@ -1,4 +1,5 @@
 import base64
+import io
 import os
 import sys
 
@@ -253,6 +254,17 @@ img_bytes: bytes | None = None
 
 if uploaded:
     img_bytes = uploaded.read()
+
+    try:
+        Image.open(io.BytesIO(img_bytes)).verify()
+    except Exception as e:
+        st.error(
+            f'**Invalid image file.** The uploaded file could not be read as an image — '
+            f'it may be corrupt or have a mislabeled extension.\n\n'
+            f'Please upload a valid JPG or PNG. Details: `{e}`'
+        )
+        st.stop()
+
     tmp_path  = f'/tmp/{uploaded.name}'
     with open(tmp_path, 'wb') as f:
         f.write(img_bytes)
@@ -275,8 +287,11 @@ if uploaded:
                     if model is None:
                         st.error(f'Model weights not found: {name}')
                         continue
-                    results[name] = predict(model, tmp_path, size)
-                    results[name]['model'] = model
+                    try:
+                        results[name] = predict(model, tmp_path, size)
+                        results[name]['model'] = model
+                    except Exception as e:
+                        st.error(f'Prediction failed for **{name}**: `{e}`')
 
         if results:
             for name, r in results.items():
