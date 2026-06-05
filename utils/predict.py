@@ -11,14 +11,31 @@ def load_and_preprocess(image_path: str, target_size: tuple) -> np.ndarray:
 
 
 def predict(model: tf.keras.Model, image_path: str, target_size: tuple) -> dict:
+    """Run inference on a single image and return a result dict.
+
+    Args:
+        model:       Loaded Keras model. Must accept input shape (1, *target_size, 3).
+        image_path:  Path to a valid JPG or PNG file.
+        target_size: (width, height) to resize the image to before inference.
+                     Must match the spatial dimensions the model was trained on.
+
+    Returns:
+        {
+            'class':         str   — predicted class label, one of CLASSES
+            'confidence':    float — probability of the predicted class, in [0.0, 1.0]
+            'probabilities': dict  — {class_label: float} for all classes, values sum to ~1.0
+            'image_array':   np.ndarray — preprocessed image, shape (H, W, 3),
+                             dtype float32, values in [0.0, 1.0]; ready for compute_saliency
+        }
+    """
     img   = load_and_preprocess(image_path, target_size)
     probs = model.predict(img[np.newaxis, ...], verbose=0)[0]
     idx   = int(np.argmax(probs))
     return {
-        'class':        CLASSES[idx],
-        'confidence':   float(probs[idx]),
+        'class':         CLASSES[idx],
+        'confidence':    float(probs[idx]),
         'probabilities': {c: float(p) for c, p in zip(CLASSES, probs)},
-        'image_array':  img,
+        'image_array':   img,
     }
 
 
