@@ -2,6 +2,7 @@ import base64
 import io
 import os
 import sys
+import tomllib
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,58 +21,32 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 # Set via HF Space secret or .env — e.g. "yourusername/brain-tumor-models"
 HF_MODEL_REPO = os.getenv('HF_MODEL_REPO', '')
 
-st.set_page_config(page_title='Brain Tumor MRI Classification', layout='wide')
+# ── Load model registry and class metadata from config.toml ────────────────────
+_REPO_ROOT  = os.path.join(os.path.dirname(__file__), '..')
+_CONFIG_PATH = os.path.join(_REPO_ROOT, 'config.toml')
+
+try:
+    with open(_CONFIG_PATH, 'rb') as _f:
+        _cfg = tomllib.load(_f)
+except FileNotFoundError:
+    raise RuntimeError(
+        f'config.toml not found at {_CONFIG_PATH}. '
+        'Ensure it exists at the repo root before running the app.'
+    )
 
 MODEL_PATHS = {
-    'Custom CNN': (
-        os.path.join(os.path.dirname(__file__), '..', 'models', 'custom_cnn_brain_tumor.keras'),
-        (224, 224),
-    ),
-    'Xception': (
-        os.path.join(os.path.dirname(__file__), '..', 'models', 'xception_brain_mri_final.keras'),
-        (299, 299),
-    ),
+    m['name']: (
+        os.path.join(_REPO_ROOT, 'models', m['filename']),
+        tuple(m['input_size']),
+    )
+    for m in _cfg['models']
 }
 
-OPENAI_MODELS = {
-    'GPT-4o':      'gpt-4o',
-    'GPT-4o mini': 'gpt-4o-mini',
-}
+OPENAI_MODELS = {m['label']: m['id'] for m in _cfg['llm_models']}
 
-CLASS_INFO = {
-    'glioma': {
-        'name': 'Glioma',
-        'description': 'A tumor arising from glial cells in the brain or spinal cord.',
-        'subtypes': 'Astrocytoma, Oligodendroglioma, Glioblastoma (GBM)',
-        'prevalence': '~33% of all brain tumors',
-        'severity': 'High',
-        'color': '#D94F4F',
-    },
-    'meningioma': {
-        'name': 'Meningioma',
-        'description': 'A tumor that forms on the meninges — membranes surrounding the brain and spinal cord.',
-        'subtypes': 'Grade I (benign ~80%), Grade II (atypical), Grade III (anaplastic)',
-        'prevalence': '~37% of all brain tumors',
-        'severity': 'Moderate',
-        'color': '#E07B00',
-    },
-    'no_tumor': {
-        'name': 'No Tumor Detected',
-        'description': 'No tumor detected in this MRI scan.',
-        'subtypes': 'N/A',
-        'prevalence': 'N/A',
-        'severity': 'None',
-        'color': '#1A9E52',
-    },
-    'pituitary': {
-        'name': 'Pituitary Tumor',
-        'description': 'A tumor that forms in the pituitary gland at the base of the brain.',
-        'subtypes': 'Adenoma (most common), Craniopharyngioma (rare)',
-        'prevalence': '~17% of all brain tumors',
-        'severity': 'Low–Moderate',
-        'color': '#2B6CB0',
-    },
-}
+CLASS_INFO: dict = _cfg['classes']
+
+st.set_page_config(page_title='Brain Tumor MRI Classification', layout='wide')
 
 
 def _ensure_model_file(path: str) -> str | None:

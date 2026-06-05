@@ -1,0 +1,60 @@
+# ── Model registry ─────────────────────────────────────────────────────────────
+# Add a new [[models]] entry to register an additional classification model.
+# filename is resolved relative to the models/ directory at the repo root.
+
+[[models]]
+name       = "Custom CNN"
+filename   = "custom_cnn_brain_tumor.keras"
+input_size = [224, 224]
+
+[[models]]
+name       = "Xception"
+filename   = "xception_brain_mri_final.keras"
+input_size = [299, 299]
+
+
+# ── LLM options ────────────────────────────────────────────────────────────────
+
+[[llm_models]]
+label = "GPT-4o"
+id    = "gpt-4o"
+
+[[llm_models]]
+label = "GPT-4o mini"
+id    = "gpt-4o-mini"
+
+
+# ── Tumour class metadata ───────────────────────────────────────────────────────
+# Keys must match the string labels produced by the classifier (CLASSES in utils/predict.py).
+
+[classes.glioma]
+name        = "Glioma"
+description = "A tumor arising from glial cells in the brain or spinal cord."
+subtypes    = "Astrocytoma, Oligodendroglioma, Glioblastoma (GBM)"
+prevalence  = "~33% of all brain tumors"
+severity    = "High"
+color       = "#D94F4F"
+
+[classes.meningioma]
+name        = "Meningioma"
+description = "A tumor that forms on the meninges — membranes surrounding the brain and spinal cord."
+subtypes    = "Grade I (benign ~80%), Grade II (atypical), Grade III (anaplastic)"
+prevalence  = "~37% of all brain tumors"
+severity    = "Moderate"
+color       = "#E07B00"
+
+[classes.no_tumor]
+name        = "No Tumor Detected"
+description = "No tumor detected in this MRI scan."
+subtypes    = "N/A"
+prevalence  = "N/A"
+severity    = "None"
+color       = "#1A9E52"
+
+[classes.pituitary]
+name        = "Pituitary Tumor"
+description = "A tumor that forms in the pituitary gland at the base of the brain."
+subtypes    = "Adenoma (most common), Craniopharyngioma (rare)"
+prevalence  = "~17% of all brain tumors"
+severity    = "Low–Moderate"
+color       = "#2B6CB0"
