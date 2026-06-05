@@ -399,7 +399,20 @@ if results:
             'Generate a structured clinical summary based on the classification results and the uploaded MRI.'
         )
         if not api_key:
-            st.warning('Enter an OpenAI API key in the sidebar to generate a report.')
+            st.info(
+                '**OpenAI API key required.** Enter your key in the sidebar under '
+                '**OpenAI API Key**, or directly below.'
+            )
+            inline_key = st.text_input(
+                'OpenAI API Key',
+                type='password',
+                placeholder='sk-...',
+                key='inline_api_key_report',
+                help='Stored only in this browser session — never logged or transmitted.',
+            )
+            if inline_key:
+                st.session_state.openai_api_key = inline_key
+                st.rerun()
         else:
             if st.button('Generate Report', type='primary'):
                 prompt = (
@@ -441,7 +454,20 @@ if results:
 
     with tab_chat:
         if not api_key:
-            st.warning('Enter an OpenAI API key in the sidebar to use image analysis.')
+            st.info(
+                '**OpenAI API key required.** Enter your key in the sidebar under '
+                '**OpenAI API Key**, or directly below.'
+            )
+            inline_key = st.text_input(
+                'OpenAI API Key',
+                type='password',
+                placeholder='sk-...',
+                key='inline_api_key_chat',
+                help='Stored only in this browser session — never logged or transmitted.',
+            )
+            if inline_key:
+                st.session_state.openai_api_key = inline_key
+                st.rerun()
         else:
             if 'chat_history' not in st.session_state:
                 st.session_state.chat_history = []
