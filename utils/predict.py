@@ -23,6 +23,40 @@ def predict(model: tf.keras.Model, image_path: str, target_size: tuple) -> dict:
 
 
 def compute_saliency(model: tf.keras.Model, image: np.ndarray) -> np.ndarray:
+    """Return a normalised saliency map for *image* w.r.t. the model's top prediction.
+
+    Preconditions:
+    - image: np.ndarray, shape (H, W, 3), single RGB image without a batch dimension
+    - dtype: float32 or float64; values in [0.0, 1.0] (i.e. rescaled, not raw uint8)
+    - H and W must match the spatial dimensions the model expects (model.input_shape[1:3])
+    """
+    if not isinstance(image, np.ndarray):
+        raise TypeError(
+            f'image must be a numpy ndarray, got {type(image).__name__}.'
+        )
+    if image.ndim != 3:
+        raise ValueError(
+            f'image must be 3-D (H, W, C), got shape {image.shape}. '
+            'Pass a single image without a batch dimension.'
+        )
+    if image.shape[-1] != 3:
+        raise ValueError(
+            f'image must have 3 channels (RGB), got {image.shape[-1]}.'
+        )
+    expected_h, expected_w = model.input_shape[1], model.input_shape[2]
+    if image.shape[0] != expected_h or image.shape[1] != expected_w:
+        raise ValueError(
+            f'image spatial dimensions {image.shape[:2]} do not match the model\'s '
+            f'expected input size {(expected_h, expected_w)}. '
+            'Resize the image before calling compute_saliency.'
+        )
+    if image.min() < 0.0 or image.max() > 1.0:
+        raise ValueError(
+            f'image values must be in [0.0, 1.0] '
+            f'(got min={image.min():.4f}, max={image.max():.4f}). '
+            'Rescale with image / 255.0 before calling compute_saliency.'
+        )
+
     tensor = tf.Variable(image[np.newaxis, ...], dtype=tf.float32)
     with tf.GradientTape() as tape:
         preds     = model(tensor)
