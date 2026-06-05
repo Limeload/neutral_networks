@@ -28,6 +28,10 @@ cp .env.example .env
 streamlit run app/app.py
 ```
 
+## Deployment security
+
+`.streamlit/config.toml` keeps `enableCORS` and `enableXsrfProtection` set to `true` (the Streamlit defaults). **Do not set either to `false` in a shared or public deployment** — doing so disables CORS and CSRF protections and exposes users to browser-based attacks. If you need to work around a reverse-proxy issue locally, disable them only in a private environment and re-enable before deploying.
+
 ## Project structure
 
 ```
