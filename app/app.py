@@ -249,6 +249,12 @@ uploaded = st.file_uploader(
     type=['jpg', 'jpeg', 'png'],
 )
 
+if not uploaded:
+    st.info(
+        '**Getting started:** Enable at least one classification model in the sidebar, '
+        'then upload a brain MRI scan (JPG or PNG) above.'
+    )
+
 results: dict   = {}
 img_bytes: bytes | None = None
 
@@ -529,3 +535,9 @@ if results:
                             answer = f'⚠️ OpenAI error: {e}'
                     st.markdown(answer)
                 st.session_state.chat_history.append({'role': 'assistant', 'content': answer})
+
+elif uploaded:
+    st.info(
+        '**No predictions available.** Make sure at least one model is enabled in the '
+        'sidebar and its weights are accessible, then re-upload your scan.'
+    )
