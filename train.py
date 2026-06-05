@@ -1,6 +1,8 @@
 """Train Xception (transfer learning) and Custom SE-ResNet CNN on the Brain Tumor dataset."""
 import argparse
 import os
+import sys
+import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -15,6 +17,20 @@ MODELS_DIR = os.path.join(os.path.dirname(__file__), 'models')
 BATCH_SIZE = 32
 
 os.makedirs(MODELS_DIR, exist_ok=True)
+
+
+def _check_accuracy(acc: float, target: float, label: str, strict: bool = False) -> None:
+    """Warn (or raise in strict mode) when a model misses its accuracy target."""
+    if acc >= target:
+        print(f'✓ {label}: {acc:.4f} meets the ≥{target:.0%} target.')
+        return
+    msg = (
+        f'{label} test accuracy {acc:.4f} is below the ≥{target:.0%} target. '
+        'Check data pipeline, augmentation, and training hyperparameters.'
+    )
+    if strict:
+        raise AssertionError(msg)
+    warnings.warn(msg, stacklevel=2)
 
 
 def make_generators(image_size: tuple, augment: bool = True):
@@ -56,12 +72,13 @@ def _build_xception(image_size: tuple) -> tuple:
     return keras.Model(inputs, outputs), base
 
 
-def train_xception(quick: bool = False) -> keras.Model:
+def train_xception(quick: bool = False, strict: bool = False) -> keras.Model:
     print('\n' + '=' * 60)
     print('Training Xception — transfer learning (target ≥99%)')
     print('=' * 60)
     image_size = (299, 299)
-    save_path  = os.path.join(MODELS_DIR, 'xception_brain_tumor.keras')
+    # Filename must match config.toml so the app loads the right weights.
+    save_path  = os.path.join(MODELS_DIR, 'xception_brain_mri_final.keras')
 
     train_gen, val_gen, test_gen = make_generators(image_size)
     model, base = _build_xception(image_size)
@@ -88,6 +105,7 @@ def train_xception(quick: bool = False) -> keras.Model:
 
     loss, acc = model.evaluate(test_gen)
     print(f'\nXception test accuracy: {acc:.4f}')
+    _check_accuracy(acc, target=0.99, label='Xception', strict=strict)
     model.save(save_path)
     print(f'Saved → {save_path}')
     return model
@@ -138,7 +156,7 @@ def _build_se_resnet(image_size: tuple) -> keras.Model:
     return keras.Model(inputs, outputs)
 
 
-def train_custom_cnn(quick: bool = False) -> keras.Model:
+def train_custom_cnn(quick: bool = False, strict: bool = False) -> keras.Model:
     print('\n' + '=' * 60)
     print('Training SE-ResNet CNN (target ≥98%)')
     print('=' * 60)
@@ -168,6 +186,7 @@ def train_custom_cnn(quick: bool = False) -> keras.Model:
 
     loss, acc = model.evaluate(test_gen)
     print(f'\nCustom CNN test accuracy: {acc:.4f}')
+    _check_accuracy(acc, target=0.98, label='Custom CNN', strict=strict)
     if not os.path.exists(save_path):
         model.save(save_path)
     print(f'Saved → {save_path}')
@@ -177,12 +196,18 @@ def train_custom_cnn(quick: bool = False) -> keras.Model:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train brain-tumor classification models')
     parser.add_argument('--model',  choices=['xception', 'cnn', 'both'], default='both')
-    parser.add_argument('--quick', action='store_true', help='Few epochs — for smoke-testing')
+    parser.add_argument('--quick',  action='store_true', help='Few epochs — for smoke-testing')
+    parser.add_argument('--strict', action='store_true',
+                        help='Exit with code 1 if any model misses its accuracy target (for CI)')
     args = parser.parse_args()
 
-    if args.model in ('xception', 'both'):
-        train_xception(quick=args.quick)
-    if args.model in ('cnn', 'both'):
-        train_custom_cnn(quick=args.quick)
+    try:
+        if args.model in ('xception', 'both'):
+            train_xception(quick=args.quick, strict=args.strict)
+        if args.model in ('cnn', 'both'):
+            train_custom_cnn(quick=args.quick, strict=args.strict)
+    except AssertionError as exc:
+        print(f'\n✗ Accuracy target not met: {exc}', file=sys.stderr)
+        sys.exit(1)
 
     print('\nAll done — models saved to models/')
